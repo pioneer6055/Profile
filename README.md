@@ -16,5 +16,4 @@ PAUSE (pause for a period of milliseconds)
 CURVE (drive in a curved line for a certain distance)
 
 Requirements:  
-Heading value from a gyro
-Distance value from an encoder
+Heading value from a gyro and distance value from an encoder
