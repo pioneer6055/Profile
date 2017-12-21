@@ -21,16 +21,6 @@ void Profile::Initialize()
 	MoveStartHeading = 0;
 	OutputMagnitude = 0;
 	Curve = 0;
-	ProfileMinSpeed = 0.35;
-	ProfileMaxSpeed = 1.00;
-	ProfileMinTurnSpeed = 0.35;
-	ProfileMaxTurnSpeed = 0.75;
-	ProfileSteerKp = 0.01;
-	ProfileSteerKi = 0.00;
-	ProfileSteerKd = 0.00;
-	ProfileTurnKp = 0.05;
-	ProfileTurnKi = 0.00;
-	ProfileTurnKd = 0.00;
 	TurnPID.Initialize(&ProfileTurnKp,&ProfileTurnKi,&ProfileTurnKd);
 	SteerPID.Initialize(&ProfileSteerKp,&ProfileSteerKi,&ProfileSteerKd);
 }
@@ -57,8 +47,8 @@ void Profile::ExecuteProfile(double heading, double distance)
 					StartDistance = distance;
 					curDistance = distance - StartDistance;
 					//reverse the steering gain depending on forward or reverse
-					if ((Steps[StepNDX].MaxSpeed < 0 && ProfileSteerKp < 0) || (Steps[StepNDX].MaxSpeed > 0 && ProfileSteerKp > 0))  ProfileSteerKp = ProfileSteerKp * -1;
-					printf("Steerkp = %5.2f\n",ProfileSteerKp);
+					if (Steps[StepNDX].MaxSpeed < 0) ProfileSteerKp = fabs(ProfileSteerKp) * -1;
+					else ProfileSteerKp = fabs(ProfileSteerKp);
 					if (StepNDX > 0)
 						Set_Trapezoid(Steps[StepNDX].TgtDistance,Steps[StepNDX].MinSpeed,Steps[StepNDX].MaxSpeed,Steps[StepNDX-1].MaxSpeed,Steps[StepNDX+1].MaxSpeed); //initialize the move profile
 					else
@@ -80,7 +70,6 @@ void Profile::ExecuteProfile(double heading, double distance)
 					printf("MOVE %i EndHeading: %5.2f\n",StepNDX,heading);
 					Curve = 0.0;
 					OutputMagnitude = 0.0;
-					if (ProfileSteerKp < 0) ProfileSteerKp = ProfileSteerKp * -1;
 					StepNDX++;
 				}
 				break;
@@ -96,17 +85,9 @@ void Profile::ExecuteProfile(double heading, double distance)
 					printf("TURN %i Start - Angle: %5.2f\n",StepNDX,heading);
 					startError = GetNormalizedError(heading,Steps[StepNDX].TgtHeading);
 					printf("TURN %i Start - Error: %5.2f\n",StepNDX,startError);
-					if ((Steps[StepNDX].MaxSpeed < 0 && ProfileSteerKp < 0) || (Steps[StepNDX].MaxSpeed > 0 && ProfileSteerKp > 0))  ProfileSteerKp = ProfileSteerKp * -1;
-					if(startError < 0)
-					{
-						Steps[StepNDX].MinSpeed = fabs(ProfileMinTurnSpeed) * -1.0;
-						Steps[StepNDX].MaxSpeed = fabs(ProfileMaxTurnSpeed) * -1.0;
-					}
-					else
-					{
-						Steps[StepNDX].MinSpeed = fabs(ProfileMinTurnSpeed);
-						Steps[StepNDX].MaxSpeed = fabs(ProfileMaxTurnSpeed);
-					}
+					Steps[StepNDX].MinSpeed = fabs(ProfileMinTurnSpeed);
+					Steps[StepNDX].MaxSpeed = fabs(ProfileMaxTurnSpeed);
+					ProfileTurnKp = fabs(ProfileTurnKp);
 					if (StepNDX > 0)
 						Set_Trapezoid(startError,Steps[StepNDX].MinSpeed,Steps[StepNDX].MaxSpeed,Steps[StepNDX-1].MaxSpeed,Steps[StepNDX+1].MaxSpeed);
 					else
@@ -116,11 +97,13 @@ void Profile::ExecuteProfile(double heading, double distance)
 				{
 					curError = GetNormalizedError(heading,Steps[StepNDX].TgtHeading);
 					Curve = Clamp(TurnPID.Update(0.0,curError));
-					if (startError < 0 && Curve > 0) Curve *= -1;
-					if (startError > 0 && Curve < 0) Curve *= -1;
+					//Set curve based on which way we are turning - left = negative
+					if (startError < 0) Curve = fabs(Curve);
+					else Curve = fabs(Curve) * -1.0;
 					OutputMagnitude = Clamp(Get_Trapezoid(abs(startError - curError))); //execute the move profile
-					if (startError < 0 && Steps[StepNDX].MaxSpeed < 0 && OutputMagnitude < 0) OutputMagnitude *= -1;
-					if (startError > 0 && Steps[StepNDX].MaxSpeed < 0 && OutputMagnitude > 0) OutputMagnitude *= -1;
+					//set speed based on which way we are turning
+					if (Steps[StepNDX].MaxSpeed < 0) OutputMagnitude = fabs(OutputMagnitude) * -1.0;
+					else OutputMagnitude = fabs(OutputMagnitude);
 				}
 				else
 				{
@@ -128,8 +111,6 @@ void Profile::ExecuteProfile(double heading, double distance)
 					printf("TURN %i Done - Error: %5.2f\n",StepNDX,curError);
 					Curve = 0.0;
 					OutputMagnitude = 0.0;
-					if (ProfileTurnKp < 0) ProfileTurnKp = ProfileTurnKp * -1;
-					if (ProfileSteerKp < 0) ProfileSteerKp = ProfileSteerKp * -1;
 					StepNDX++;
 				}
 				break;
@@ -175,8 +156,9 @@ void Profile::ExecuteProfile(double heading, double distance)
 					Steps[StepNDX].StartFlag = true;
 					StartDistance = distance;
 					curDistance = distance - StartDistance;
-					if ((Steps[StepNDX].MaxSpeed < 0 && ProfileSteerKp < 0) || (Steps[StepNDX].MaxSpeed > 0 && ProfileSteerKp > 0))  ProfileSteerKp = ProfileSteerKp * -1;
-					printf("Steerkp = %5.2f\n",ProfileSteerKp);
+					//reverse the steering gain depending on forward or reverse
+					if (Steps[StepNDX].MaxSpeed < 0) ProfileSteerKp = fabs(ProfileSteerKp) * -1;
+					else ProfileSteerKp = fabs(ProfileSteerKp);
 					if (StepNDX > 0)
 						Set_Trapezoid(Steps[StepNDX].TgtDistance,Steps[StepNDX].MinSpeed,Steps[StepNDX].MaxSpeed,Steps[StepNDX-1].MaxSpeed,Steps[StepNDX+1].MaxSpeed); //initialize the move profile
 					else
@@ -198,7 +180,6 @@ void Profile::ExecuteProfile(double heading, double distance)
 					printf("CURVE %i EndHeading: %5.2f\n",StepNDX,heading);
 					Curve = 0.0;
 					OutputMagnitude = 0.0;
-					if (ProfileSteerKp < 0) ProfileSteerKp = ProfileSteerKp * -1;
 					StepNDX++;
 				}
 				break;
@@ -414,6 +395,7 @@ double Profile::Get_Trapezoid(double curDist)
 		return 0.0f;
 	}
 }
+
 
 
 

@@ -82,8 +82,8 @@ public:
 	double ProfileMinSpeed = 0.35;
 	double ProfileMaxSpeed = 1.00;
 	double ProfileMinTurnSpeed = 0.35;
-	double ProfileMaxTurnSpeed = 0.75;
-	double ProfileSteerKp = 0.01;
+	double ProfileMaxTurnSpeed = 1.0;
+	double ProfileSteerKp = -0.01;
 	double ProfileSteerKi = 0.00;
 	double ProfileSteerKd = 0.00;
 	double ProfileTurnKp = 0.05;
