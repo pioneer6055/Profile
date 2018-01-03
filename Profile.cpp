@@ -170,7 +170,8 @@ void Profile::ExecuteProfile(double heading, double distance)
 				}
 				if(!Steps[StepNDX].DoneFlag)
 				{
-					curError = GetNormalizedError(heading,MoveStartHeading);
+					//curError = GetNormalizedError(heading,MoveStartHeading);
+					//Curve = Clamp(SteerPID.Update(0.0,curError));
 					Curve = Clamp(Steps[StepNDX].Curve); //user controls amount of curve, 0 = straight
 					OutputMagnitude = Clamp(Get_Trapezoid(curDistance)); //execute the move profile
 				}
@@ -266,7 +267,7 @@ int Profile::AddCurve(DirectionType Direction, double TgtDistance, double Curve)
 {
 	ProfileParams pp;
 
-	pp.Command = 2;
+	pp.Command = 4;
 	if (Direction == kProfileForward)
 	{
 		pp.MinSpeed = fabs(ProfileMinSpeed) * -1;
